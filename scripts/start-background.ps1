@@ -33,22 +33,126 @@ function Get-NodeCommand {
   if (-not $command) {
     $command = Get-Command node -ErrorAction SilentlyContinue
   }
-  if (-not $command) {
-    throw "Node.js was not found. Install Node.js from https://nodejs.org, then run Setup.bat."
+
+  if ($command) {
+    return $command.Source
   }
-  return $command.Source
+
+  $fallbacks = @(
+    (Join-Path $env:ProgramFiles "nodejs\node.exe"),
+    (Join-Path ${env:ProgramFiles(x86)} "nodejs\node.exe"),
+    (Join-Path $env:LOCALAPPDATA "Programs\nodejs\node.exe")
+  ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
+
+  foreach ($candidate in $fallbacks) {
+    if (Test-Path -LiteralPath $candidate) {
+      return (Resolve-Path -LiteralPath $candidate).Path
+    }
+  }
+
+  throw "Node.js was not found. Install Node.js from https://nodejs.org, then run Setup.bat."
 }
 
-function Repair-ProcessPathEnvironment {
-  $pathValue = [Environment]::GetEnvironmentVariable("Path", "Process")
-  if (-not $pathValue) {
-    $pathValue = [Environment]::GetEnvironmentVariable("PATH", "Process")
+function Get-EffectivePath {
+  $pathValues = @(
+    [Environment]::GetEnvironmentVariable("Path", "Process"),
+    [Environment]::GetEnvironmentVariable("PATH", "Process"),
+    [Environment]::GetEnvironmentVariable("Path", "User"),
+    [Environment]::GetEnvironmentVariable("Path", "Machine")
+  )
+
+  $segments = New-Object System.Collections.Generic.List[string]
+  $seen = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
+
+  foreach ($pathValue in $pathValues) {
+    if ([string]::IsNullOrWhiteSpace($pathValue)) {
+      continue
+    }
+
+    foreach ($segment in ($pathValue -split ';')) {
+      $trimmed = $segment.Trim()
+      if ([string]::IsNullOrWhiteSpace($trimmed)) {
+        continue
+      }
+
+      if ($seen.Add($trimmed)) {
+        [void]$segments.Add($trimmed)
+      }
+    }
   }
 
-  if ($pathValue) {
-    [Environment]::SetEnvironmentVariable("Path", $pathValue, "Process")
-    [Environment]::SetEnvironmentVariable("PATH", $null, "Process")
+  return [string]::Join(';', $segments)
+}
+
+function Get-EffectiveHome {
+  $homeValue = [Environment]::GetEnvironmentVariable("HOME", "Process")
+  if (-not [string]::IsNullOrWhiteSpace($homeValue)) {
+    return $homeValue
   }
+
+  $userProfile = [Environment]::GetEnvironmentVariable("USERPROFILE", "Process")
+  if (-not [string]::IsNullOrWhiteSpace($userProfile)) {
+    return $userProfile
+  }
+
+  return $null
+}
+
+function Get-BackgroundEnvironment {
+  $effectivePath = Get-EffectivePath
+  $effectiveHome = Get-EffectiveHome
+  $userProfile = [Environment]::GetEnvironmentVariable("USERPROFILE", "Process")
+
+  return [pscustomobject]@{
+    Path = $effectivePath
+    Home = $effectiveHome
+    UserProfile = $userProfile
+    PathPresent = -not [string]::IsNullOrWhiteSpace($effectivePath)
+    PathLength = if ([string]::IsNullOrWhiteSpace($effectivePath)) { 0 } else { $effectivePath.Length }
+    HomePresent = -not [string]::IsNullOrWhiteSpace($effectiveHome)
+    UserProfilePresent = -not [string]::IsNullOrWhiteSpace($userProfile)
+  }
+}
+
+function Set-ProcessPathValue {
+  param([AllowNull()][string]$Value)
+
+  if ([string]::IsNullOrWhiteSpace($Value)) {
+    $env:Path = ""
+    $env:PATH = ""
+    return
+  }
+
+  $env:Path = $Value
+  $env:PATH = $Value
+}
+
+function Start-HiddenWatcherProcess {
+  param(
+    [pscustomobject]$BackgroundEnvironment,
+    [string]$WatcherScript,
+    [string]$ProjectRoot,
+    [string]$StdoutLog,
+    [string]$StderrLog
+  )
+
+  Set-ProcessPathValue -Value $BackgroundEnvironment.Path
+  if ([string]::IsNullOrWhiteSpace($BackgroundEnvironment.Home)) {
+    Remove-Item Env:HOME -ErrorAction SilentlyContinue
+  } else {
+    $env:HOME = $BackgroundEnvironment.Home
+  }
+
+  $node = Get-NodeCommand
+
+  return Start-Process `
+    -FilePath $node `
+    -ArgumentList @("`"$WatcherScript`"") `
+    -WorkingDirectory $ProjectRoot `
+    -WindowStyle Hidden `
+    -RedirectStandardOutput $StdoutLog `
+    -RedirectStandardError $StderrLog `
+    -PassThru
 }
 
 function Read-PidFile {
@@ -222,23 +326,23 @@ try {
     }
   }
 
-  $node = Get-NodeCommand
   Write-Host "Starting Codex Limit Watcher in the background..."
   Write-Host "Project folder: $projectRoot"
   Write-Host "Logs: $logsDir"
-
-  Repair-ProcessPathEnvironment
+  $backgroundEnvironment = Get-BackgroundEnvironment
+  Write-Host "Path present: $($backgroundEnvironment.PathPresent.ToString().ToLowerInvariant())"
+  Write-Host "Path length: $($backgroundEnvironment.PathLength)"
+  Write-Host "HOME present: $($backgroundEnvironment.HomePresent.ToString().ToLowerInvariant())"
+  Write-Host "USERPROFILE present: $($backgroundEnvironment.UserProfilePresent.ToString().ToLowerInvariant())"
   Remove-Item -LiteralPath $stdoutLog -Force -ErrorAction SilentlyContinue
   Remove-Item -LiteralPath $stderrLog -Force -ErrorAction SilentlyContinue
 
-  $process = Start-Process `
-    -FilePath $node `
-    -ArgumentList @("`"$watcherScript`"") `
-    -WorkingDirectory $projectRoot `
-    -WindowStyle Hidden `
-    -RedirectStandardOutput $stdoutLog `
-    -RedirectStandardError $stderrLog `
-    -PassThru
+  $process = Start-HiddenWatcherProcess `
+    -BackgroundEnvironment $backgroundEnvironment `
+    -WatcherScript $watcherScript `
+    -ProjectRoot $projectRoot `
+    -StdoutLog $stdoutLog `
+    -StderrLog $stderrLog
 
   Set-Content -LiteralPath $pidFile -Value ([string]$process.Id) -NoNewline
   Write-WatcherState -Path $stateFile -Status "starting" -PidValue $process.Id -Message "Background watcher process was started and is being verified."

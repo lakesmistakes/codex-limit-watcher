@@ -266,12 +266,13 @@ npm run diagnose:app-server
 ```
 
 - `diagnose:app-server` starts Codex the same way as the watcher, reports whether `initialize` succeeded, whether the child stayed alive briefly, recent redacted stdout/stderr, the resolved Codex command, checked command candidates, cwd, USERPROFILE, HOME, and whether PATH was present plus its length. Its `cleanup` block now shows whether an exit was actually observed, whether descendant verification was performed, whether any descendant still appears to be running, and whether cleanup is confirmed or uncertain before the diagnostic exits.
-- If hidden/background mode fails, run `Watcher Status.bat` and check these log files:
+- Hidden/background mode now repairs the child launcher `Path`/`HOME` from the current process plus user/machine `Path` before it starts Node. That repair is local to the hidden launcher and does not change your global Windows environment.
+- If hidden/background mode still fails, run `Watcher Status.bat` and check these log files:
   - `logs\watcher-background.out.log`
   - `logs\watcher-background.err.log`
   - `logs\codex-limit-watcher.log`
 - If foreground works but hidden mode fails, compare the `diagnose:app-server` output with the background logs. The most useful fields are the resolved Codex command, checked candidates, cwd, USERPROFILE, HOME, PATH present/length, and recent redacted stdout/stderr.
-- If background mode keeps exiting right away, try `Start Watcher.bat` so you can see the live startup error in the visible window before it falls back to the manual reminder message.
+- If background mode keeps exiting right away, try `Start Watcher.bat`, then use `Watcher Status.bat` and the three log files above so you can see the live startup error before it falls back to the manual reminder message.
 - If notifications do not appear, run these exact checks first:
 
 ```powershell

@@ -1,0 +1,48 @@
+{
+  "pollEverySeconds": 300,
+  "notifyPrimary5h": true,
+  "notifyWeekly": true,
+  "notifyThresholdRemaining": 100,
+  "requireConsecutiveReads": 2,
+  "notificationCooldownSeconds": 1800,
+  "quietHours": null,
+  "logPath": "logs/codex-limit-watcher.log",
+  "codexCommand": null,
+  "notifications": {
+    "toastEnabled": true,
+    "billboardEnabled": true,
+    "soundEnabled": true,
+    "soundFile": "assets/sounds/gem-alarm.wav",
+    "billboardImage": "assets/billboards/usage-reset-lock-in.png",
+    "primary5hTitle": "5H USAGE RESET",
+    "primary5hMessage": "5-hour Codex limit is back. Lock in.",
+    "weeklyTitle": "USAGE RESET LOCK TF IN!!",
+    "weeklyMessage": "Weekly Codex limit is back. Stop wasting the reset.",
+    "earlyWeeklyTitle": "EARLY WEEKLY RESET DETECTED",
+    "earlyWeeklyMessage": "Codex weekly usage dropped early. Open Codex now."
+  },
+  "billboard": {
+    "durationSeconds": 30,
+    "alwaysOnTop": true,
+    "borderless": true,
+    "showTaskbarIcon": false,
+    "position": "bottomRight",
+    "screenMargin": 24,
+    "mode": "imageWithSmallBadge",
+    "fit": "contain",
+    "autoSizeToImage": true,
+    "maxWidth": 460,
+    "maxHeight": 345,
+    "backgroundColor": "#000000",
+    "badgeFontSize": 11,
+    "badgePadding": 8,
+    "badgeOpacity": 0.72,
+    "showCustomDismissButton": false,
+    "clickToDismiss": true
+  },
+  "display": {
+    "timeZone": "local",
+    "resetTimeFormat": "weekdayTime",
+    "triggeredTimeFormat": "dateTime"
+  }
+}

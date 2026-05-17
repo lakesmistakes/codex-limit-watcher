@@ -1,0 +1,22 @@
+{
+  "name": "codex-limit-watcher",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Windows-first local watcher for Codex app-server usage limits.",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/watcher.js",
+    "probe": "node src/watcher.js --once --log-raw-shape",
+    "diagnose:notifications": "node src/watcher.js --diagnose-notifications",
+    "manual-reminder": "node src/manual-reminder.js",
+    "test:sound": "node src/watcher.js --test-sound",
+    "test:toast": "node src/watcher.js --test-toast",
+    "test:billboard": "node src/watcher.js --test-billboard",
+    "test:primary": "node src/watcher.js --test-notification primary",
+    "test:weekly": "node src/watcher.js --test-notification weekly",
+    "test:early-weekly": "node src/watcher.js --test-notification early-weekly"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

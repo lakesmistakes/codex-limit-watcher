@@ -1,0 +1,10 @@
+config.json
+.watcher.pid
+logs/
+*.log
+Gem Alarm.wav
+usagealarm*.png
+assets/codex-back.wav
+assets/user/*
+!assets/user/README.md
+node_modules/

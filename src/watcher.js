@@ -11,6 +11,7 @@ const args = new Set(argv);
 
 main().catch((error) => {
   console.error(error.message);
+  printAppServerDiagnostics(error.appServerDiagnostics);
   process.exitCode = 1;
 });
 
@@ -36,8 +37,16 @@ async function main() {
   try {
     init = await client.start();
   } catch (error) {
-    log(config, { source: "codex-app-server", error: error.message, mode: "manual-reminder-fallback" });
-    throw new Error(`app-server did not start. Use manual fallback: npm run manual-reminder -- --in 5h --message "Check Codex limits"`);
+    const diagnostics = getAppServerDiagnostics(client, error);
+    log(config, {
+      source: "codex-app-server",
+      error: error.message,
+      mode: "manual-reminder-fallback",
+      appServerDiagnostics: diagnostics,
+    });
+    const wrapped = new Error(`app-server did not start. Use manual fallback: npm run manual-reminder -- --in 5h --message "Check Codex limits"`);
+    wrapped.appServerDiagnostics = diagnostics;
+    throw wrapped;
   }
 
   console.log(`Codex Limit Watcher started (${init.platformOs}; ${init.userAgent}).`);
@@ -101,8 +110,15 @@ async function main() {
   setInterval(() => {
     runOnce().catch((error) => {
       state.successfulReads = 0;
-      log(config, { source: "codex-app-server", error: error.message, notificationFired: [] });
+      const diagnostics = getAppServerDiagnostics(client, error);
+      log(config, {
+        source: "codex-app-server",
+        error: error.message,
+        notificationFired: [],
+        appServerDiagnostics: diagnostics,
+      });
       console.error(error.message);
+      printAppServerDiagnostics(diagnostics);
     });
   }, Math.max(30, Number(config.pollEverySeconds || 300)) * 1000);
 }
@@ -251,4 +267,17 @@ function normalizeTestType(type) {
   if (type === "weekly") return "weekly";
   if (type === "early-weekly") return "earlyWeekly";
   return null;
+}
+
+function getAppServerDiagnostics(client, error) {
+  if (error && error.appServerDiagnostics) {
+    return error.appServerDiagnostics;
+  }
+  return client.getDiagnostics();
+}
+
+function printAppServerDiagnostics(diagnostics) {
+  if (!diagnostics) return;
+  console.error("App-server diagnostics:");
+  console.error(JSON.stringify(diagnostics, null, 2));
 }

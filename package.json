@@ -8,6 +8,7 @@
     "start": "node src/watcher.js",
     "probe": "node src/watcher.js --once --log-raw-shape",
     "diagnose:notifications": "node src/watcher.js --diagnose-notifications",
+    "diagnose:app-server": "node src/diagnoseAppServer.js",
     "manual-reminder": "node src/manual-reminder.js",
     "background:start": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/start-background.ps1",
     "background:stop": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/stop-background.ps1",

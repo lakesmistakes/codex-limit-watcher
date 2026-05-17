@@ -66,6 +66,12 @@ Run notification diagnostics without querying Codex limits:
 npm run diagnose:notifications
 ```
 
+Run app-server startup diagnostics without leaving the watcher running:
+
+```powershell
+npm run diagnose:app-server
+```
+
 Test individual notification channels:
 
 ```powershell
@@ -253,6 +259,19 @@ Warnings for missing assets are logged like this:
 
 - If `codex` is not found, set `codexCommand` in `config.json` to the full path of `codex.ps1`, `codex.cmd`, or `codex.exe`.
 - If the app-server schema changes, run `npm run probe` and inspect the redacted shape. Update `src/rateLimits.js` so bucket mapping is confirmed by field names or durations before notifications are trusted.
+- If the watcher says `codex app-server exited with code=1 signal=null`, run these exact checks first:
+
+```powershell
+npm run diagnose:app-server
+```
+
+- `diagnose:app-server` starts Codex the same way as the watcher, reports whether `initialize` succeeded, whether the child stayed alive briefly, recent redacted stdout/stderr, the resolved Codex command, checked command candidates, cwd, USERPROFILE, HOME, and whether PATH was present plus its length. Its `cleanup` block now shows whether an exit was actually observed, whether descendant verification was performed, whether any descendant still appears to be running, and whether cleanup is confirmed or uncertain before the diagnostic exits.
+- If hidden/background mode fails, run `Watcher Status.bat` and check these log files:
+  - `logs\watcher-background.out.log`
+  - `logs\watcher-background.err.log`
+  - `logs\codex-limit-watcher.log`
+- If foreground works but hidden mode fails, compare the `diagnose:app-server` output with the background logs. The most useful fields are the resolved Codex command, checked candidates, cwd, USERPROFILE, HOME, PATH present/length, and recent redacted stdout/stderr.
+- If background mode keeps exiting right away, try `Start Watcher.bat` so you can see the live startup error in the visible window before it falls back to the manual reminder message.
 - If notifications do not appear, run these exact checks first:
 
 ```powershell

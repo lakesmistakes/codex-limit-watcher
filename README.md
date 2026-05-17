@@ -27,8 +27,12 @@ If `Open Logs.bat` says no log exists yet, that is normal before the watcher or 
 
 There are two start modes:
 
-- Use `Start Watcher.bat` when you want to see the live command window for debugging. Closing that window stops the watcher.
-- Use `Start Watcher Hidden.bat` for normal background use. It writes the background process ID to `.watcher.pid` and sends command output to `logs\watcher-background.out.log` and `logs\watcher-background.err.log`.
+- Use `Start Watcher.bat` when you want visible/debug mode. It shows the live command window, and closing that window stops the watcher.
+- Use `Start Watcher Hidden.bat` for normal/background mode. It starts the watcher without leaving a command prompt open.
+- Use `Watcher Status.bat` if you are unsure whether background mode is running. It shows the saved PID, whether the process still looks like Codex Limit Watcher, recent log lines, and where the logs live.
+- Use `Stop Watcher.bat` to stop background mode.
+- Logs are stored in `logs\`. Background output goes to `logs\watcher-background.out.log`, background errors go to `logs\watcher-background.err.log`, and app/quota logs go to `logs\codex-limit-watcher.log`.
+- If background mode fails or exits right away, try `Start Watcher.bat` so you can see live errors in the visible window.
 
 ## Setup
 

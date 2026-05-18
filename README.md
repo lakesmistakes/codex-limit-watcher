@@ -10,6 +10,8 @@ If you do not like command prompts, start here. These files are meant to be doub
 - `Test Notification.bat` checks the sound, toast, and billboard without reading Codex limits.
 - `Start Watcher.bat` starts the watcher in visible/debug mode. Leave the window open while you want it running.
 - `Start Watcher Hidden.bat` starts the watcher in background mode without leaving a command prompt window open.
+- `Setup Autostart.bat` creates or updates a Windows Task Scheduler entry so background mode starts when you sign in.
+- `Remove Autostart.bat` removes that Windows Task Scheduler entry.
 - `Stop Watcher.bat` stops the background watcher.
 - `Watcher Status.bat` checks whether the background watcher is running and shows the PID and log locations.
 - `Open Config.bat` opens your local settings file. If `config.json` does not exist yet, it opens the example settings.
@@ -20,17 +22,28 @@ Recommended first run:
 1. Double-click `Setup.bat`.
 2. Double-click `Test Notification.bat`.
 3. Double-click `Start Watcher Hidden.bat` for background mode.
-4. Double-click `Watcher Status.bat` any time you want to check it.
-5. Double-click `Stop Watcher.bat` when you want to stop background mode.
+4. Optional: double-click `Setup Autostart.bat` if you want it to start automatically when you sign in.
+5. Double-click `Watcher Status.bat` any time you want to check it.
+6. Double-click `Stop Watcher.bat` when you want to stop background mode.
+7. Double-click `Remove Autostart.bat` if you want to remove automatic start later.
 
 If `Open Logs.bat` says no log exists yet, that is normal before the watcher or tests have run.
+
+Autostart details:
+
+- `Setup Autostart.bat` creates or updates one current-user scheduled task named `Codex Limit Watcher`.
+- It starts the same hidden/background flow that `Start Watcher Hidden.bat` uses, so status and stop still work the same way.
+- It uses Windows Task Scheduler with your normal sign-in and does not require admin rights or a stored password.
+- `Remove Autostart.bat` removes only that scheduled task.
 
 There are two start modes:
 
 - Use `Start Watcher.bat` when you want visible/debug mode. It shows the live command window, and closing that window stops the watcher.
 - Use `Start Watcher Hidden.bat` for normal/background mode. It starts the watcher without leaving a command prompt open.
+- Use `Setup Autostart.bat` if you want that same background mode to start automatically at sign-in.
 - Use `Watcher Status.bat` if you are unsure whether background mode is running. It shows the saved PID, whether the process still looks like Codex Limit Watcher, recent log lines, and where the logs live.
 - Use `Stop Watcher.bat` to stop background mode.
+- Use `Remove Autostart.bat` if you no longer want it to start at sign-in.
 - Logs are stored in `logs\`. Background output goes to `logs\watcher-background.out.log`, background errors go to `logs\watcher-background.err.log`, and app/quota logs go to `logs\codex-limit-watcher.log`.
 - If background mode fails or exits right away, try `Start Watcher.bat` so you can see live errors in the visible window.
 

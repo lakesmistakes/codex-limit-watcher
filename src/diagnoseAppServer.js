@@ -2,6 +2,7 @@ const { spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 const { AppServerClient } = require("./appServerClient");
+const { appendAppLog, ensureAppLogDir } = require("./logging");
 
 const rootDir = path.resolve(__dirname, "..");
 const CLEANUP_GRACE_MS = 2000;
@@ -15,7 +16,7 @@ main().catch((error) => {
 
 async function main() {
   const { config, configPath } = loadConfig();
-  ensureDir(path.resolve(rootDir, path.dirname(config.logPath || "logs/codex-limit-watcher.log")));
+  ensureAppLogDir(config, rootDir);
 
   const client = new AppServerClient({ codexCommand: config.codexCommand });
   const result = {
@@ -55,6 +56,7 @@ async function main() {
       appServerDiagnostic: result,
     });
     console.log(JSON.stringify(result, null, 2));
+    closeClientHandles(client);
   }
 
   if (!result.initializeSucceeded || !result.cleanedUpChild) {
@@ -73,13 +75,7 @@ function loadConfig() {
 }
 
 function log(config, entry) {
-  const logPath = path.resolve(rootDir, config.logPath || "logs/codex-limit-watcher.log");
-  ensureDir(path.dirname(logPath));
-  fs.appendFileSync(logPath, `${JSON.stringify({ timestamp: new Date().toISOString(), ...entry })}\n`);
-}
-
-function ensureDir(dir) {
-  fs.mkdirSync(dir, { recursive: true });
+  appendAppLog(config, rootDir, entry);
 }
 
 async function cleanupClient(client) {
@@ -356,4 +352,23 @@ function sanitizeProcessMessage(message) {
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function closeClientHandles(client) {
+  try {
+    if (client.rl) client.rl.close();
+  } catch {
+  }
+
+  const child = client.child;
+  if (!child) {
+    return;
+  }
+
+  for (const stream of [child.stdin, child.stdout, child.stderr]) {
+    try {
+      if (stream && !stream.destroyed) stream.destroy();
+    } catch {
+    }
+  }
 }

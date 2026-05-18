@@ -1,6 +1,24 @@
 # Codex Limit Watcher
 
-Windows-first local watcher for Codex usage limits. It talks to the official local Codex app-server over `stdio://`; it does not scrape ChatGPT, automate a browser, OCR screenshots, or read auth/token files.
+Unofficial Windows-first local watcher for Codex usage limits. This is not OpenAI software and is not endorsed or supported by OpenAI.
+
+It talks to the local Codex app-server endpoint over `stdio://`; it does not scrape ChatGPT, automate a browser, OCR screenshots, or read auth/token files.
+
+## Requirements
+
+- Windows.
+- Node.js and npm.
+- Codex installed and signed in.
+- The local Codex app-server endpoint must be available through `codex app-server --listen stdio://`.
+
+## Fresh-Clone Quickstart
+
+1. Download or clone this folder.
+2. Double-click `Setup.bat`.
+3. Double-click `Configure Watcher.bat` if you want to change notification settings.
+4. Double-click `Test Notification.bat`.
+5. Double-click `Start Watcher Hidden.bat`.
+6. Use `Watcher Status.bat`, `Stop Watcher.bat`, `Setup Autostart.bat`, and `Remove Autostart.bat` as needed.
 
 ## Easy Setup for Non-Technical Users
 
@@ -17,17 +35,6 @@ If you do not like command prompts, start here. These files are meant to be doub
 - `Watcher Status.bat` checks whether the background watcher is running and shows the PID and log locations.
 - `Open Config.bat` opens your local settings file. If `config.json` does not exist yet, it opens the example settings.
 - `Open Logs.bat` opens the log file if one has been created.
-
-Recommended first run:
-
-1. Double-click `Setup.bat`.
-2. Double-click `Configure Watcher.bat` if you want a guided menu for the sound, toast, and billboard settings.
-3. Double-click `Test Notification.bat`.
-4. Double-click `Start Watcher Hidden.bat` for background mode.
-5. Optional: double-click `Setup Autostart.bat` if you want it to start automatically when you sign in.
-6. Double-click `Watcher Status.bat` any time you want to check it.
-7. Double-click `Stop Watcher.bat` when you want to stop background mode.
-8. Double-click `Remove Autostart.bat` if you want to remove automatic start later.
 
 If `Open Logs.bat` says no log exists yet, that is normal before the watcher or tests have run.
 
@@ -61,7 +68,7 @@ cd A:\Programs\codex-limit-watcher
 copy config.example.json config.json
 ```
 
-3. Edit `config.json` if you want different sounds, images, titles, messages, or polling.
+5. Edit `config.json` if you want different sounds, images, titles, messages, or polling.
 
 ## Commands
 
@@ -269,6 +276,8 @@ Quota detection lives separately from notification rendering, so reset detection
 
 Logs are compact JSON lines in `logs/codex-limit-watcher.log`. Logs are ignored by git.
 
+The default app log rotates when it reaches 2 MB. It keeps four old copies named `codex-limit-watcher.log.1` through `codex-limit-watcher.log.4`. Rotation does not touch `logs\config-backups\` or the background stdout/stderr logs.
+
 Example:
 
 ```json
@@ -285,8 +294,19 @@ Warnings for missing assets are logged like this:
 
 - Commit `config.example.json`, not your local `config.json`.
 - Commit default public assets under `assets/billboards/` and `assets/sounds/` only if you have rights to share them.
-- Do not commit `logs/`.
+- Do not commit `logs/`, `.watcher.pid`, `.watcher-state.json`, `.codex/`, or `node_modules/`.
 - Do not commit auth files, cookies, API keys, browser data, or Codex token files.
+
+## Known Limitations
+
+- Windows-first.
+- Depends on the local Codex app-server endpoint being available.
+- If Codex changes the local endpoint or response shape, this tool may need an update.
+- Does not scrape the ChatGPT web UI.
+- Does not OCR screenshots.
+- Notifications depend on local Windows notification and media support.
+- Missing custom sound or image paths warn instead of crashing.
+- Autostart uses Windows Task Scheduler for the current user and does not require admin.
 
 ## Troubleshooting
 
@@ -299,6 +319,7 @@ npm run diagnose:app-server
 ```
 
 - `diagnose:app-server` starts Codex the same way as the watcher, reports whether `initialize` succeeded, whether the child stayed alive briefly, recent redacted stdout/stderr, the resolved Codex command, checked command candidates, cwd, USERPROFILE, HOME, and whether PATH was present plus its length. Its `cleanup` block now shows whether an exit was actually observed, whether descendant verification was performed, whether any descendant still appears to be running, and whether cleanup is confirmed or uncertain before the diagnostic exits.
+- This is an advanced diagnostic. It may exit with an error if cleanup validation is uncertain, even when the beginner watcher flow works.
 - Hidden/background mode now repairs the child launcher `Path`/`HOME` from the current process plus user/machine `Path` before it starts Node. That repair is local to the hidden launcher and does not change your global Windows environment.
 - If hidden/background mode still fails, run `Watcher Status.bat` and check these log files:
   - `logs\watcher-background.out.log`

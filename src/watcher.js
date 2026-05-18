@@ -2,6 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 process.noDeprecation = true;
 const { AppServerClient } = require("./appServerClient");
+const { appendAppLog, ensureAppLogDir } = require("./logging");
 const { normalizeRateLimits, detectEvents, compactWindow } = require("./rateLimits");
 const { notify, runNotificationTest } = require("./notifier");
 
@@ -17,7 +18,7 @@ main().catch((error) => {
 
 async function main() {
   const { config, configPath } = loadConfig();
-  ensureDir(path.resolve(rootDir, path.dirname(config.logPath || "logs/codex-limit-watcher.log")));
+  ensureAppLogDir(config, rootDir);
 
   const notificationCommand = readNotificationCommand();
   if (notificationCommand) {
@@ -134,13 +135,7 @@ function loadConfig() {
 }
 
 function log(config, entry) {
-  const logPath = path.resolve(rootDir, config.logPath || "logs/codex-limit-watcher.log");
-  ensureDir(path.dirname(logPath));
-  fs.appendFileSync(logPath, `${JSON.stringify({ timestamp: new Date().toISOString(), ...entry })}\n`);
-}
-
-function ensureDir(dir) {
-  fs.mkdirSync(dir, { recursive: true });
+  appendAppLog(config, rootDir, entry);
 }
 
 function isCoolingDown(key, state, config) {

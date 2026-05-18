@@ -1,6 +1,7 @@
 config.json
 .watcher.pid
 .watcher-state.json
+.codex/
 logs/
 *.log
 Gem Alarm.wav

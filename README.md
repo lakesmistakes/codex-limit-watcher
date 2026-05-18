@@ -1,6 +1,6 @@
 # Codex Limit Watcher
 
-Unofficial Windows-first local watcher for Codex usage limits. It uses the local Codex app-server endpoint, not ChatGPT web scraping or OCR.
+Unofficial Windows-first local watcher for Codex usage limits. It uses the local Codex app-server endpoint to alert when your limits are reset.
 
 ![Codex Limit Watcher billboard preview](assets/billboards/usage-reset-lock-in.png)
 

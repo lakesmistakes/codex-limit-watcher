@@ -7,6 +7,7 @@ Windows-first local watcher for Codex usage limits. It talks to the official loc
 If you do not like command prompts, start here. These files are meant to be double-clicked from the Codex Limit Watcher folder:
 
 - `Setup.bat` prepares the app, creates `config.json` if needed, installs Node packages if needed, and runs a notification test.
+- `Configure Watcher.bat` opens a guided settings menu for the supported notification options and backs up `config.json` before every save.
 - `Test Notification.bat` checks the sound, toast, and billboard without reading Codex limits.
 - `Start Watcher.bat` starts the watcher in visible/debug mode. Leave the window open while you want it running.
 - `Start Watcher Hidden.bat` starts the watcher in background mode without leaving a command prompt window open.
@@ -20,12 +21,13 @@ If you do not like command prompts, start here. These files are meant to be doub
 Recommended first run:
 
 1. Double-click `Setup.bat`.
-2. Double-click `Test Notification.bat`.
-3. Double-click `Start Watcher Hidden.bat` for background mode.
-4. Optional: double-click `Setup Autostart.bat` if you want it to start automatically when you sign in.
-5. Double-click `Watcher Status.bat` any time you want to check it.
-6. Double-click `Stop Watcher.bat` when you want to stop background mode.
-7. Double-click `Remove Autostart.bat` if you want to remove automatic start later.
+2. Double-click `Configure Watcher.bat` if you want a guided menu for the sound, toast, and billboard settings.
+3. Double-click `Test Notification.bat`.
+4. Double-click `Start Watcher Hidden.bat` for background mode.
+5. Optional: double-click `Setup Autostart.bat` if you want it to start automatically when you sign in.
+6. Double-click `Watcher Status.bat` any time you want to check it.
+7. Double-click `Stop Watcher.bat` when you want to stop background mode.
+8. Double-click `Remove Autostart.bat` if you want to remove automatic start later.
 
 If `Open Logs.bat` says no log exists yet, that is normal before the watcher or tests have run.
 
@@ -50,7 +52,9 @@ There are two start modes:
 ## Setup
 
 1. Install Codex Desktop / Codex CLI and make sure `codex --version` works.
-2. Open PowerShell:
+2. Double-click `Setup.bat` if you want the simplest path. It creates `config.json` for you and runs a notification check.
+3. Double-click `Configure Watcher.bat` if you want a beginner-friendly menu for the supported notification settings.
+4. Manual PowerShell fallback:
 
 ```powershell
 cd A:\Programs\codex-limit-watcher
@@ -128,6 +132,22 @@ npm run manual-reminder -- --at "2026-05-17 09:00" --message "Check Codex weekly
 ## Config
 
 `config.example.json` is the shareable template. `config.json` is local and ignored by git.
+
+For most people, `Configure Watcher.bat` is the easiest way to change the supported notification settings. The menu can:
+
+- turn the toast pop-up on or off
+- turn the sound alert on or off
+- turn the billboard pop-up on or off
+- change the sound file path
+- change the billboard image path
+- change the billboard max width and max height
+- change the billboard position
+- run `npm run diagnose:notifications`
+- restore from local backups saved in `logs\config-backups\`
+
+The menu backs up `config.json` before every save. If the sound file path or billboard image path does not exist yet, the menu warns you but still saves the path. The menu's beginner size guidance is `400x300`.
+
+If you need to change advanced settings that are not in the menu, edit `config.json` directly or use `Open Config.bat`.
 
 Important notification settings:
 

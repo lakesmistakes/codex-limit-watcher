@@ -1,7 +1,7 @@
 const { spawnSync } = require("node:child_process");
-const fs = require("node:fs");
 const path = require("node:path");
 const { AppServerClient } = require("./appServerClient");
+const { loadConfig } = require("./config");
 const { appendAppLog, ensureAppLogDir } = require("./logging");
 
 const rootDir = path.resolve(__dirname, "..");
@@ -15,7 +15,7 @@ main().catch((error) => {
 });
 
 async function main() {
-  const { config, configPath } = loadConfig();
+  const { config, configPath } = loadConfig(rootDir);
   ensureAppLogDir(config, rootDir);
 
   const client = new AppServerClient({ codexCommand: config.codexCommand });
@@ -62,16 +62,6 @@ async function main() {
   if (!result.initializeSucceeded || !result.cleanedUpChild) {
     process.exitCode = 1;
   }
-}
-
-function loadConfig() {
-  const file = path.join(rootDir, "config.json");
-  const fallback = path.join(rootDir, "config.example.json");
-  const selected = fs.existsSync(file) ? file : fallback;
-  return {
-    config: JSON.parse(fs.readFileSync(selected, "utf8")),
-    configPath: selected,
-  };
 }
 
 function log(config, entry) {

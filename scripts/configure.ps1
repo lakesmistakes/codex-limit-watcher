@@ -127,7 +127,8 @@ function Write-ConfigFile {
 
   try {
     $json = $ConfigObject | ConvertTo-Json -Depth 20
-    Set-Content -LiteralPath $tempPath -Value $json -Encoding UTF8
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($tempPath, $json, $utf8NoBom)
     $null = Get-JsonObject -Path $tempPath -Label "the updated config"
     Copy-Item -LiteralPath $tempPath -Destination $ConfigPath -Force
     $null = Get-JsonObject -Path $ConfigPath -Label "the saved config"

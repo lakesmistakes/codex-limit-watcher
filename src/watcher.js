@@ -1,7 +1,7 @@
-const fs = require("node:fs");
 const path = require("node:path");
 process.noDeprecation = true;
 const { AppServerClient } = require("./appServerClient");
+const { loadConfig } = require("./config");
 const { appendAppLog, ensureAppLogDir } = require("./logging");
 const { normalizeRateLimits, detectEvents, compactWindow } = require("./rateLimits");
 const { notify, runNotificationTest } = require("./notifier");
@@ -17,7 +17,7 @@ main().catch((error) => {
 });
 
 async function main() {
-  const { config, configPath } = loadConfig();
+  const { config, configPath } = loadConfig(rootDir);
   ensureAppLogDir(config, rootDir);
 
   const notificationCommand = readNotificationCommand();
@@ -122,16 +122,6 @@ async function main() {
       printAppServerDiagnostics(diagnostics);
     });
   }, Math.max(30, Number(config.pollEverySeconds || 300)) * 1000);
-}
-
-function loadConfig() {
-  const file = path.join(rootDir, "config.json");
-  const fallback = path.join(rootDir, "config.example.json");
-  const selected = fs.existsSync(file) ? file : fallback;
-  return {
-    config: JSON.parse(fs.readFileSync(selected, "utf8")),
-    configPath: selected,
-  };
 }
 
 function log(config, entry) {

@@ -6,6 +6,14 @@ Unofficial Windows-first local watcher for Codex usage limits. It uses the local
 
 This is not OpenAI software and is not endorsed or supported by OpenAI.
 
+```md
+
+## Support
+
+If this helped you, you can support the project here:
+
+[Buy Me a Coffee](https://buymeacoffee.com/lakeitron)
+
 ## Requirements
 
 - Windows

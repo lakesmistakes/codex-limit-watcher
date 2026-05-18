@@ -200,7 +200,7 @@ function Get-RecentAppErrors {
     }
 
     if ($SinceUtc -ne $null) {
-      $entryTime = $null
+      [datetime]$entryTime = [datetime]::MinValue
       if (-not [datetime]::TryParse([string]$entry.timestamp, [ref]$entryTime)) {
         continue
       }

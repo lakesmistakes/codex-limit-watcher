@@ -117,14 +117,16 @@ function Get-BackgroundEnvironment {
 function Set-ProcessPathValue {
   param([AllowNull()][string]$Value)
 
+  # Windows treats environment keys case-insensitively, so remove PATH before
+  # writing the canonical Path key that the child process will inherit.
+  [Environment]::SetEnvironmentVariable("PATH", $null, "Process")
+
   if ([string]::IsNullOrWhiteSpace($Value)) {
-    $env:Path = ""
-    $env:PATH = ""
+    [Environment]::SetEnvironmentVariable("Path", "", "Process")
     return
   }
 
-  $env:Path = $Value
-  $env:PATH = $Value
+  [Environment]::SetEnvironmentVariable("Path", $Value, "Process")
 }
 
 function Start-HiddenWatcherProcess {

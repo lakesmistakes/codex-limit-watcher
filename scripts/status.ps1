@@ -194,17 +194,22 @@ function Get-RecentAppErrors {
   )
 
   $errors = @()
+  $sinceUtcCutoff = $null
+  if ($SinceUtc -ne $null) {
+    $sinceUtcCutoff = ([datetime]$SinceUtc).ToUniversalTime()
+  }
+
   foreach ($entry in $Entries) {
     if (-not $entry.error) {
       continue
     }
 
-    if ($SinceUtc -ne $null) {
+    if ($sinceUtcCutoff -ne $null) {
       [datetime]$entryTime = [datetime]::MinValue
       if (-not [datetime]::TryParse([string]$entry.timestamp, [ref]$entryTime)) {
         continue
       }
-      if ($entryTime.ToUniversalTime() -lt $SinceUtc.Value.ToUniversalTime()) {
+      if ($entryTime.ToUniversalTime() -lt $sinceUtcCutoff) {
         continue
       }
     }

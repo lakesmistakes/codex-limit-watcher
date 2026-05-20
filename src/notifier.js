@@ -1,6 +1,7 @@
 const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
+const { AUTH_EXPIRED_BODY, AUTH_EXPIRED_TITLE } = require("./authExpired");
 const { normalizeDisplaySettings, buildDisplayInfo } = require("./displayTime");
 
 function notify(event, config, rootDir, logWarning = () => {}) {
@@ -120,6 +121,9 @@ function normalizeNotificationSettings(config, rootDir, logWarning = () => {}) {
 }
 
 function getEventMessage(type, settings) {
+  if (type === "authExpired") {
+    return { title: AUTH_EXPIRED_TITLE, body: AUTH_EXPIRED_BODY };
+  }
   if (type === "primary5h") {
     return { title: settings.primary5hTitle, body: settings.primary5hMessage };
   }
@@ -130,7 +134,7 @@ function getEventMessage(type, settings) {
 }
 
 function shouldShowBillboard(type) {
-  return type === "weekly" || type === "earlyWeekly" || type === "primary5h";
+  return type === "weekly" || type === "earlyWeekly" || type === "primary5h" || type === "authExpired";
 }
 
 async function runNotificationTest({
@@ -484,7 +488,7 @@ function buildBillboardArgs(rootDir, event, message, settings, displayInfo, over
     "-EmitReady",
     String(emitReady),
   ];
-  if (settings.billboardImageAsset.exists) {
+  if (event.type !== "authExpired" && settings.billboardImageAsset.exists) {
     args.push("-ImagePath", settings.billboardImageAsset.resolvedPath);
   }
   return args;
@@ -607,4 +611,10 @@ function numberOrDefault(value, fallback) {
   return Number.isFinite(number) ? number : fallback;
 }
 
-module.exports = { notify, normalizeNotificationSettings, runNotificationTest };
+module.exports = {
+  buildBillboardArgs,
+  normalizeNotificationSettings,
+  notify,
+  runNotificationTest,
+  shouldShowBillboard,
+};

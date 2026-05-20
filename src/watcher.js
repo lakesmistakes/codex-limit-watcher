@@ -1,4 +1,5 @@
 const path = require("node:path");
+const { AUTH_EXPIRED_BODY, createAuthExpiredNotificationEvent, getAuthExpiredState } = require("./authExpired");
 process.noDeprecation = true;
 const { AppServerClient } = require("./appServerClient");
 const { loadConfig } = require("./config");
@@ -31,6 +32,7 @@ async function main() {
     successfulReads: 0,
     pendingCounts: new Map(),
     lastNotifiedAt: new Map(),
+    authExpiredNotificationSuppressed: false,
   };
 
   const client = new AppServerClient({ codexCommand: config.codexCommand });
@@ -38,15 +40,17 @@ async function main() {
   try {
     init = await client.start();
   } catch (error) {
-    const diagnostics = getAppServerDiagnostics(client, error);
-    log(config, {
-      source: "codex-app-server",
-      error: error.message,
-      mode: "manual-reminder-fallback",
-      appServerDiagnostics: diagnostics,
+    const handled = recordAppServerError({
+      client,
+      config,
+      error,
+      state,
+      extraEntry: { mode: "manual-reminder-fallback" },
     });
-    const wrapped = new Error(`app-server did not start. Use manual fallback: npm run manual-reminder -- --in 5h --message "Check Codex limits"`);
-    wrapped.appServerDiagnostics = diagnostics;
+    const wrapped = handled.authExpired
+      ? new Error(`Codex auth expired. ${AUTH_EXPIRED_BODY}`)
+      : new Error(`app-server did not start. Use manual fallback: npm run manual-reminder -- --in 5h --message "Check Codex limits"`);
+    wrapped.appServerDiagnostics = handled.diagnostics;
     throw wrapped;
   }
 
@@ -61,6 +65,7 @@ async function main() {
   const runOnce = async () => {
     const raw = await client.readRateLimits();
     const current = normalizeRateLimits(raw);
+    state.authExpiredNotificationSuppressed = false;
     state.successfulReads += 1;
 
     if (args.has("--log-raw-shape")) {
@@ -111,15 +116,12 @@ async function main() {
   setInterval(() => {
     runOnce().catch((error) => {
       state.successfulReads = 0;
-      const diagnostics = getAppServerDiagnostics(client, error);
-      log(config, {
-        source: "codex-app-server",
-        error: error.message,
-        notificationFired: [],
-        appServerDiagnostics: diagnostics,
-      });
+      const handled = recordAppServerError({ client, config, error, state });
+      if (handled.readableMessage) {
+        console.error(handled.readableMessage);
+      }
       console.error(error.message);
-      printAppServerDiagnostics(diagnostics);
+      printAppServerDiagnostics(handled.diagnostics);
     });
   }, Math.max(30, Number(config.pollEverySeconds || 300)) * 1000);
 }
@@ -259,6 +261,46 @@ function getAppServerDiagnostics(client, error) {
     return error.appServerDiagnostics;
   }
   return client.getDiagnostics();
+}
+
+function recordAppServerError({ client, config, error, state, extraEntry = {} }) {
+  const diagnostics = getAppServerDiagnostics(client, error);
+  const authExpiredState = getAuthExpiredState(error, state.authExpiredNotificationSuppressed);
+  if (authExpiredState.authExpired) {
+    state.authExpiredNotificationSuppressed = authExpiredState.nextSuppressed;
+    if (authExpiredState.shouldNotify) {
+      notify(
+        createAuthExpiredNotificationEvent(),
+        config,
+        rootDir,
+        (message) => log(config, { source: "notifications", level: "warn", warning: message }),
+      );
+    }
+  }
+
+  const readableMessage = authExpiredState.authExpired
+    ? authExpiredState.shouldNotify
+      ? `Codex auth expired. ${AUTH_EXPIRED_BODY}`
+      : `Codex auth is still expired. Notification already sent. ${AUTH_EXPIRED_BODY}`
+    : null;
+
+  log(config, {
+    source: "codex-app-server",
+    error: error.message,
+    notificationFired: authExpiredState.shouldNotify ? ["authExpired"] : [],
+    authExpired: authExpiredState.authExpired,
+    authExpiredNotificationSuppressed: authExpiredState.authExpired && !authExpiredState.shouldNotify,
+    authExpiredSignals: authExpiredState.matchedSignals,
+    readableMessage,
+    appServerDiagnostics: diagnostics,
+    ...extraEntry,
+  });
+
+  return {
+    diagnostics,
+    authExpired: authExpiredState.authExpired,
+    readableMessage,
+  };
 }
 
 function printAppServerDiagnostics(diagnostics) {

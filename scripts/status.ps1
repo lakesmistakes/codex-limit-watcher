@@ -149,6 +149,9 @@ function Format-AppLogLine {
 
   try {
     $entry = $Line | ConvertFrom-Json
+    if ($entry.authExpired -and $entry.readableMessage) {
+      return "$($entry.timestamp) $($entry.source) auth expired: $($entry.readableMessage)"
+    }
     if ($entry.error) {
       return "$($entry.timestamp) $($entry.source) error: $($entry.error)"
     }
@@ -219,6 +222,18 @@ function Get-RecentAppErrors {
   return $errors
 }
 
+function Get-RecentAuthExpiredErrors {
+  param([array]$Entries)
+
+  $errors = @()
+  foreach ($entry in $Entries) {
+    if ($entry.authExpired) {
+      $errors += $entry
+    }
+  }
+  return $errors
+}
+
 function Write-Section {
   param([string]$Title)
   Write-Host ""
@@ -269,6 +284,7 @@ try {
   $stateLabel = "Stopped"
   $processName = "n/a"
   $recentErrors = @()
+  $recentAuthExpiredErrors = @()
 
   if ($pidFileExists -and $pidValue -lt 0) {
     Remove-Item -LiteralPath $pidFile -Force -ErrorAction SilentlyContinue
@@ -283,6 +299,7 @@ try {
     if ($validation.IsValid) {
       $startedUtc = $validation.Process.StartTime.ToUniversalTime()
       $recentErrors = @(Get-RecentAppErrors -Entries $appEntries -SinceUtc $startedUtc)
+      $recentAuthExpiredErrors = @(Get-RecentAuthExpiredErrors -Entries $recentErrors)
       $stateLabel = if ($recentErrors.Count -gt 0) { "Watcher running, but recent quota/app-server errors found in logs" } else { "Running normally" }
       Write-Section "Status"
       Write-Host $stateLabel
@@ -312,14 +329,23 @@ try {
 
   if ($stateLabel -ne "Running normally" -and $appEntries.Count -gt 0) {
     $recentStoppedErrors = @(Get-RecentAppErrors -Entries $appEntries -SinceUtc $null)
+    $recentStoppedAuthExpiredErrors = @(Get-RecentAuthExpiredErrors -Entries $recentStoppedErrors)
     if ($recentStoppedErrors.Count -gt 0) {
       Write-Host "Recent quota/app-server errors were found in the app log."
       Write-Host "If background mode keeps failing, try Start Watcher.bat to see live errors."
+    }
+    if ($recentStoppedAuthExpiredErrors.Count -gt 0) {
+      Write-Host "Recent Codex auth-expired errors were found in the app log."
+      Write-Host "Open Codex and sign in again. Limit Watcher cannot read usage right now."
     }
   }
 
   if ($stateLabel -eq "Watcher running, but recent quota/app-server errors found in logs") {
     Write-Host "The watcher process is running, but the app log has recent errors from this run."
+  }
+  if ($recentAuthExpiredErrors.Count -gt 0) {
+    Write-Host "Recent Codex auth-expired errors were found in this run."
+    Write-Host "Open Codex and sign in again. Limit Watcher cannot read usage right now."
   }
 
   Write-Host "Most recent app log line: $(Format-AppLogLine -Line $latestAppLine)"
